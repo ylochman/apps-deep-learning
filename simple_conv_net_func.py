@@ -46,30 +46,45 @@ def conv2d_vector(x_in, conv_weight, conv_bias, device):
     conv_weight = conv_weight.to(device)
     conv_bias = conv_bias.to(device)
 
-    # Convolution loop
-    for i in range(0, S_out, 1):
-        for j in range(0, S_out, 1):
-            # x_in_patch: [N, C_in, K, K]
-            x_in_patch = x_in[:, :, i:i+K, j:j+K].contiguous()
-            # x_out_patch: [N, C_out, 1, 1] = [N, 1, 1, C_in * K * K] @ [C_out, C_in * K * K, 1]
-            x_out[:,:,i,j] = torch.matmul(
-                x_in_patch.view(N, 1, 1, C_in * K * K),
-                conv_weight.view(C_out, C_in * K * K, 1))[:,:,0,0] + conv_bias
+    # Convolution
+    x_in_cols = im2col(x_in, K) 
+    conv_weight_rows = conv_weight2rows(conv_weight)
+    # [N, C_out, S_out * S_out] = [C_out, S] @ [N, S, S_out * S_out]
+    x_out = torch.matmul(conv_weight_rows, x_in_cols) + conv_bias.view(1, C_out, 1)
+    x_out = x_out.view(N, C_out, S_out, S_out)
     return x_out
 
 
-def im2col(X, kernel_size, device):
-    #
-    # Add your code here
-    #
-    pass
+def im2col(x_in, K):
+    """
+    Args:
+        x_in: [N, C_in, S_in, S_in] tensor
+        K: int
+    Returns:
+        x_in_cols: [N, S, S_out * S_out] tensor
+            where S = C_in * K * K,
+              S_out = S_in - K + 1
+    """
+    N, C_in, S_in, S_in = x_in.size()
+    S_out = S_in - K + 1
+    S = C_in * K * K
+    x_in_cols = torch.zeros([N, S, S_out * S_out])
+    for i in range(0, S_out, 1):
+        for j in range(0, S_out, 1):
+            x_in_cols[:,:,i*j] = x_in[:, :, i:i+K, j:j+K].contiguous().view(N, S)
+    return x_in_cols
 
 
 def conv_weight2rows(conv_weight):
-    #
-    # Add your code here
-    #
-    pass
+    """
+    Args:
+        conv_weight: [C_out, C_in, K, K] tensor
+    Returns:
+        conv_weight_rows: [C_out, S] tensor where S = C_in * S_in * S_in
+    """
+    C_out, C_in, K, K = conv_weight.size()
+    conv_weight_rows = conv_weight.view(C_out, C_in * K * K)
+    return conv_weight_rows
 
 
 def pool2d_scalar(a, device):
@@ -133,6 +148,13 @@ def relu_vector(x_in, device):
     return torch.max(x_in, torch.zeros_like(x_in))
     
 
+def reshape_scalar(a, device):
+    #
+    # Add your code here
+    #
+    pass
+
+
 def reshape_vector(x_in, device):
     """
     Args:
@@ -152,12 +174,6 @@ def reshape_vector(x_in, device):
 
     return x_in.view(N, -1)
 
-
-def reshape_scalar(a, device):
-    #
-    # Add your code here
-    #
-    pass
 
 def fc_layer_scalar(a, weight, bias, device):
     #
