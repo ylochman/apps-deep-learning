@@ -121,18 +121,36 @@ def relu_scalar(a, device):
     pass
 
 
-def relu_vector(a, device):
-    #
-    # Add your code here
-    #
-    pass
+def relu_vector(x_in, device):
+    """
+    Args:
+        x_in: any size tensor
+        device: 'cpu' or 'cuda'
+    Returns:
+        x_out:  tensor where S_out = S_in // 2
+    """
+    x_in = x_in.to(device)
+    return torch.max(x_in, torch.zeros_like(x_in))
+    
 
+def reshape_vector(x_in, device):
+    """
+    Args:
+        x_in: [N, C_in, S_in, S_in] tensor
+        device: 'cpu' or 'cuda'
+    Returns:
+        x_out: [N, C_out * S_in * S_in] tensor
+    """
+    # Assertions
+    assert x_in.ndimension() == 4
 
-def reshape_vector(a, device):
-    #
-    # Add your code here
-    #
-    pass
+    # Shapes
+    N = x_in.size()[0]
+
+    # Moving to device
+    x_in = x_in.to(device)
+
+    return x_in.view(N, -1)
 
 
 def reshape_scalar(a, device):
