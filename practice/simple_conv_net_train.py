@@ -118,8 +118,8 @@ def main(args):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--custom', type=bool, default=True,
-                        help='use custom layers implementation (default: True)')
+    parser.add_argument('--custom', action='store_true', default=False,
+                        help='use custom layers implementation (default: False)')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
