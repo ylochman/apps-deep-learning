@@ -11,10 +11,14 @@ You can check it by running `python test.py`
 
 ### Results
 After training using PyTorch layers (run `python simple_conv_net_train.py`) I got:
-`Test set: Average loss: -0.9852, Accuracy: 9871/10000 (98.71%)`
+```
+Test set: Average loss: -0.9852, Accuracy: 9871/10000 (98.71%)
+```
 
 After training with custom layers (run `python simple_conv_net_train.py --custom`) I got:
-`Test set: Average loss: -0.9852, Accuracy: 9876/10000 (98.76%)`
+```
+Test set: Average loss: -0.9852, Accuracy: 9876/10000 (98.76%)
+```
 
 The training details for both NNs are the same and following:
 * 20 epochs
