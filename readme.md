@@ -1,9 +1,8 @@
-# Deep Learning Course
-## Understanding of CNNs
-### Theoretical solution
+# Deep Learning Course. CNN implementation
+## Theoretical solution
 See `theory.pdf`.
 
-### Practical solution
+## Practical solution
 See `practice`.
 Implementation of layers is in `simple_conv_net_func.py`.
 You can check it by running `python test.py`
