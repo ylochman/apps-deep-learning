@@ -38,24 +38,31 @@ def conv2d_vector(x_in, conv_weight, conv_bias, device):
     C_out, _, K, K = conv_weight.size()
     S_out = S_in - K + 1
 
-    x_out = torch.zeros([N, C_out, S_out, S_out])
-
     # Moving to device
     x_in = x_in.to(device)
-    x_out = x_out.to(device)
     conv_weight = conv_weight.to(device)
     conv_bias = conv_bias.to(device)
 
-    # Convolution
-    x_in_cols = im2col(x_in, K) 
-    conv_weight_rows = conv_weight2rows(conv_weight)
-    # [N, C_out, S_out * S_out] = [C_out, S] @ [N, S, S_out * S_out]
-    x_out = torch.matmul(conv_weight_rows, x_in_cols) + conv_bias.view(1, C_out, 1)
-    x_out = x_out.view(N, C_out, S_out, S_out)
+    # Convolution loop
+    x_out = torch.zeros([N, C_out, S_out, S_out])
+    x_out = x_out.to(device)
+    for i in range(0, S_out, 1):
+        for j in range(0, S_out, 1):
+            # x_in_patch: [N, C_in, K, K]
+            x_in_patch = x_in[:, :, i:i+K, j:j+K].contiguous()
+            # x_out_patch: [N, C_out, 1, 1] = [N, 1, 1, C_in * K * K] @ [C_out, C_in * K * K, 1]
+            x_out[:,:,i,j] = torch.matmul(
+                x_in_patch.view(N, 1, 1, C_in * K * K),
+                conv_weight.view(C_out, C_in * K * K, 1))[:,:,0,0] + conv_bias
+    # # Convolution
+    # x_in_cols = im2col(x_in, K) 
+    # conv_weight_rows = conv_weight2rows(conv_weight)
+    # # [N, C_out, S_out * S_out] = [C_out, S] @ [N, S, S_out * S_out]
+    # x_out = torch.matmul(conv_weight_rows, x_in_cols) + conv_bias.view(1, C_out, 1)
+    # x_out = x_out.view(N, C_out, S_out, S_out)
     return x_out
 
-
-def im2col(x_in, K):
+def im2col(x_in, K, old=True):
     """
     Args:
         x_in: [N, C_in, S_in, S_in] tensor
@@ -69,9 +76,28 @@ def im2col(x_in, K):
     S_out = S_in - K + 1
     S = C_in * K * K
     x_in_cols = torch.zeros([N, S, S_out * S_out])
-    for i in range(0, S_out, 1):
-        for j in range(0, S_out, 1):
-            x_in_cols[:,:,i*j] = x_in[:, :, i:i+K, j:j+K].contiguous().view(N, S)
+    if old:
+        for i in range(0, S_out, 1):
+            for j in range(0, S_out, 1):
+                x_in_cols[:,:,i*j] = x_in[:, :, i:i+K, j:j+K].contiguous().view(N, S)
+    else:
+        import numpy as np
+        i0 = np.repeat(np.arange(K), K)
+        i0 = np.tile(i0, C_in)
+
+        i1 = np.repeat(np.arange(S_out), S_out)
+        
+        j0 = np.tile(np.arange(K), K * C_in)
+        j1 = np.tile(np.arange(S_out), S_out)
+        
+        i = i0.reshape(-1, 1) + i1.reshape(1, -1)
+        j = j0.reshape(-1, 1) + j1.reshape(1, -1)
+
+        k = np.repeat(np.arange(C_in), K * K).reshape(-1, 1)
+        print(k.shape, i.shape, j.shape)
+
+        x_in_cols = x_in[:, k, i, j]
+        #x_in_cols = x_in_cols.permute(1, 2, 0)#.view(K * K * C_in, -1)
     return x_in_cols
 
 
@@ -80,7 +106,7 @@ def conv_weight2rows(conv_weight):
     Args:
         conv_weight: [C_out, C_in, K, K] tensor
     Returns:
-        conv_weight_rows: [C_out, S] tensor where S = C_in * S_in * S_in
+        conv_weight_rows: [C_out, S] tensor where S = C_in * K * K
     """
     C_out, C_in, K, K = conv_weight.size()
     conv_weight_rows = conv_weight.view(C_out, C_in * K * K)
@@ -209,7 +235,6 @@ def fc_layer_vector(x_in, weight, bias, device):
     bias = bias.to(device)
 
     # Fully connected layer operation
-    # x_out: [N, C_out] = [N, 1, 1, C_in] @ [C_out, C_in, 1]
-    x_out = torch.matmul(x_in.contiguous().view(N, 1, 1, C_in),
-                        weight.view(C_out, C_in, 1))[:,:,0,0] + bias
+    # x_out: [N, C_out] = [N, C_in] @ [C_in, C_out]
+    x_out = torch.matmul(x_in, weight.permute(1,0)) + bias
     return x_out
