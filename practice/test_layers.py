@@ -7,7 +7,7 @@ def test_equality(x, y):
 
 def compare_with_pytorch(fn='vector'):
     model = SimpleConvNet('cpu', True)
-    x_in = torch.rand([64,1,28,28])
+    x_in = torch.rand([4,1,28,28])
     conv_weight = model.conv_layer.weight
     conv_bias = model.conv_layer.bias
     weight = model.fc_layer1.weight
@@ -28,24 +28,29 @@ def compare_with_pytorch(fn='vector'):
         relu = relu_vector
 
     try:
+        print('> {} form'.format(fn))
+        print('Checking conv..')
         test_equality(model.conv_layer(x_in), conv2d(x_in, conv_weight, conv_bias, device))
-        x_in = conv2d_vector(x_in, conv_weight, conv_bias, device)
+        x_in = model.conv_layer(x_in)
 
+        print('Checking maxpool..')
         test_equality(F.max_pool2d(x_in, 2, 2), pool2d(x_in, device))
-        x_in = pool2d_vector(x_in, device)
+        x_in = F.max_pool2d(x_in, 2, 2)
 
+        print('Checking reshape..')
         test_equality(x_in.view(-1, 20*12*12), reshape(x_in, device))
-        x_in = reshape_vector(x_in, device)
+        x_in = x_in.view(-1, 20*12*12)
 
+        print('Checking fc..')
         test_equality(model.fc_layer1(x_in), fc_layer(x_in, weight, bias, device))
-        x_in = fc_layer_vector(x_in, weight, bias, device) 
+        x_in = model.fc_layer1(x_in)
 
+        print('Checking relu..')
         test_equality(F.relu(x_in), relu(x_in, device))
-        x_in = relu_vector(x_in, device) 
 
-        print('{} form works perfectly!'.format(fn))
+        print('Perfect! ^__^')
     except:
-        print('something went wrong with {} form :('.format(fn))
+        print('Something went wrong.. :(')
     
 if __name__ == "__main__":
     compare_with_pytorch('scalar')

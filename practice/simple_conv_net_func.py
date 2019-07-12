@@ -86,11 +86,12 @@ def conv2d_scalar(x_in, conv_weight, conv_bias, device='cpu'):
     conv_bias = conv_bias.to(device)
     # Convolution
     x_out = torch.zeros([N, C_out, S_out, S_out]).to(device)
-    for c in range(0, C_out):
-        for i in range(0, S_out):
-            for j in range(0, S_out):
-                x_in_patch = x_in[:, :, i:i+K, j:j+K].contiguous()
-                x_out[:,c,i,j] = (x_in_patch * conv_weight[c]).sum((1,2,3)) + conv_bias[c]
+    for n in range(0, N):
+        for c in range(0, C_out):
+            for i in range(0, S_out):
+                for j in range(0, S_out):
+                    x_in_patch = x_in[n, :, i:i+K, j:j+K].contiguous()
+                    x_out[n,c,i,j] = (x_in_patch * conv_weight[c]).sum() + conv_bias[c]
     return x_out
 
 def conv2d_vector(x_in, conv_weight, conv_bias, device='cpu'):
@@ -143,9 +144,11 @@ def pool2d_scalar(x_in, device='cpu'):
     x_in = x_in.to(device)
     # Pooling loop
     x_out = torch.zeros([N, C_in, S_out, S_out]).to(device)
-    for i in range(0, S_in, stride):
-        for j in range(0, S_in, stride):
-            x_out[:,:,i//stride,j//stride] = x_in[:, :, i:i+K, j:j+K].max(3).values.max(2).values
+    for n in range(0, N):
+        for c in range(0, C_in):
+            for i in range(0, S_in, stride):
+                for j in range(0, S_in, stride):
+                    x_out[n,c,i//stride,j//stride] = x_in[n, c, i:i+K, j:j+K].max(1).values.max(0).values
     return x_out
 
 def pool2d_vector(x_in, device='cpu'):
@@ -211,11 +214,12 @@ def reshape_scalar(x_in, device='cpu'):
     L = C_in * S_in * S_in
     x_in = x_in.to(device)
     x_out = torch.zeros([N, L]).to(device)
-    for c in range(C_in):
-        for i in range(S_in):
-            for j in range(S_in):
-                l = c * S_in * S_in + i * S_in + j
-                x_out[:, l] = x_in[:, c, i, j]
+    for n in range(0, N):
+        for c in range(C_in):
+            for i in range(S_in):
+                for j in range(S_in):
+                    l = c * S_in * S_in + i * S_in + j
+                    x_out[n, l] = x_in[n, c, i, j]
     return x_out
 
 def reshape_vector(x_in, device='cpu'):
@@ -259,8 +263,9 @@ def fc_layer_scalar(x_in, weight, bias, device='cpu'):
     bias = bias.to(device)
     # Fully connected
     x_out = torch.zeros([N, C_out]).to(device)
-    for c in range(C_out):
-        x_out[:,c] = (x_in * weight[c]).sum(1) + bias[c]
+    for n in range(0, N):
+        for c in range(C_out):
+            x_out[n,c] = (x_in[n] * weight[c]).sum() + bias[c]
     return x_out
 
 def fc_layer_vector(x_in, weight, bias, device='cpu'):
