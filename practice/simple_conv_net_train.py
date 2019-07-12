@@ -11,9 +11,10 @@ from simple_conv_net_func import conv2d_vector, pool2d_vector, relu_vector, resh
 
 
 class SimpleConvNet(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, custom=True):
         super(SimpleConvNet, self).__init__()
         self.device = device
+        self.custom = custom
         self.conv_layer = nn.Conv2d(in_channels=1,
                                     out_channels=20,
                                     kernel_size=5,
@@ -28,18 +29,28 @@ class SimpleConvNet(nn.Module):
 
 
     def forward(self, x):
-        # When your implementations will be ready, replace standard Pytorch
-        # implementation by your custom functions, like:
-        #
-        # z_conv = conv2d_vector(x, conv_weight=self.conv_layer.weight,
-        #                       conv_bias=self.conv_layer.bias,
-        #                       device=self.device)
-        z_conv = self.conv_layer(x)
-        z_pool = F.max_pool2d(z_conv, 2, 2)
-        z_pool_reshaped = z_pool.view(-1, 20*12*12)
-        z_fc1 = self.fc_layer1(z_pool_reshaped)
-        z_relu = F.relu(z_fc1)
-        z_fc2 = self.fc_layer2(z_relu)
+        if self.custom:
+            z_conv = conv2d_vector(x, conv_weight=self.conv_layer.weight,
+                                conv_bias=self.conv_layer.bias,
+                                device=self.device)
+            z_pool = pool2d_vector(z_conv, device=self.device)
+            z_pool_reshaped = reshape_vector(z_pool, device=self.device)
+            z_fc1 = fc_layer_vector(z_pool_reshaped,
+                                    weight=self.fc_layer1.weight,
+                                    bias=self.fc_layer1.bias,
+                                    device=self.device)
+            z_relu = relu_vector(z_fc1, device=self.device)
+            z_fc2 = fc_layer_vector(z_relu,
+                                    weight=self.fc_layer2.weight,
+                                    bias=self.fc_layer2.bias,
+                                    device=self.device)
+        else:
+            z_conv = self.conv_layer(x)
+            z_pool = F.max_pool2d(z_conv, 2, 2)
+            z_pool_reshaped = z_pool.view(-1, 20*12*12)
+            z_fc1 = self.fc_layer1(z_pool_reshaped)
+            z_relu = F.relu(z_fc1)
+            z_fc2 = self.fc_layer2(z_relu)
         y = F.softmax(z_fc2, dim=1)
         return y
 
@@ -95,7 +106,7 @@ def main(args):
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
-    model = SimpleConvNet(device)
+    model = SimpleConvNet(device, args.custom)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
@@ -107,6 +118,8 @@ def main(args):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser.add_argument('--custom', type=bool, default=True,
+                        help='use custom layers implementation (default: True)')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
