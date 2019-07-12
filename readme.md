@@ -25,3 +25,22 @@ The training details for both NNs are the same and following:
 * batch size 64
 * lr 0.01
 * SGD momentum 0.5
+
+### Training time
+Time of training 1 epoch for vector form  (run `time python simple_conv_net_train.py --custom --epochs 1 --single-batch`):
+```
+real    0m3.083s
+user    0m2.702s
+sys     0m0.985s
+```
+
+And for scalar form  (run `time python simple_conv_net_train.py --custom --scalar --epochs 1 --single-batch`) 
+```
+real    0m10.974s
+user    0m10.364s
+sys     0m1.094s
+```
+The training details are the same:
+* batch size 64 (in fact, only one batch is passed)
+* lr 0.01
+* SGD momentum 0.5
