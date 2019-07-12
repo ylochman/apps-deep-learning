@@ -11,10 +11,11 @@ from simple_conv_net_func import conv2d_vector, pool2d_vector, relu_vector, resh
 
 
 class SimpleConvNet(nn.Module):
-    def __init__(self, device, custom=True):
+    def __init__(self, device, custom=False, scalar=False):
         super(SimpleConvNet, self).__init__()
         self.device = device
         self.custom = custom
+        self.scalar = scalar
         self.conv_layer = nn.Conv2d(in_channels=1,
                                     out_channels=20,
                                     kernel_size=5,
@@ -30,17 +31,29 @@ class SimpleConvNet(nn.Module):
 
     def forward(self, x):
         if self.custom:
-            z_conv = conv2d_vector(x, conv_weight=self.conv_layer.weight,
+            if self.scalar:
+                conv2d = conv2d_scalar
+                pool2d = pool2d_scalar
+                reshape = reshape_scalar
+                fc_layer = fc_layer_scalar
+                relu = relu_scalar
+            else:
+                conv2d = conv2d_vector
+                pool2d = pool2d_vector
+                reshape = reshape_vector
+                fc_layer = fc_layer_vector
+                relu = relu_vector
+            z_conv = conv2d(x, conv_weight=self.conv_layer.weight,
                                 conv_bias=self.conv_layer.bias,
                                 device=self.device)
-            z_pool = pool2d_vector(z_conv, device=self.device)
-            z_pool_reshaped = reshape_vector(z_pool, device=self.device)
-            z_fc1 = fc_layer_vector(z_pool_reshaped,
+            z_pool = pool2d(z_conv, device=self.device)
+            z_pool_reshaped = reshape(z_pool, device=self.device)
+            z_fc1 = fc_layer(z_pool_reshaped,
                                     weight=self.fc_layer1.weight,
                                     bias=self.fc_layer1.bias,
                                     device=self.device)
-            z_relu = relu_vector(z_fc1, device=self.device)
-            z_fc2 = fc_layer_vector(z_relu,
+            z_relu = relu(z_fc1, device=self.device)
+            z_fc2 = fc_layer(z_relu,
                                     weight=self.fc_layer2.weight,
                                     bias=self.fc_layer2.bias,
                                     device=self.device)
@@ -68,6 +81,8 @@ def train(args, model, device, train_loader, optimizer, epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
+        if args.single_batch:
+            break
 
 
 def test(args, model, device, test_loader):
@@ -106,12 +121,13 @@ def main(args):
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
-    model = SimpleConvNet(device, args.custom)
+    model = SimpleConvNet(device, args.custom, args.scalar)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
-        test(args, model, device, test_loader)
-    if (args.save_model):
+        if not args.single_batch:
+            test(args, model, device, test_loader)
+    if not args.single_batch and args.save_model:
         torch.save(model.state_dict(),"mnist_cnn.pt")
 
 
@@ -120,6 +136,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--custom', action='store_true', default=False,
                         help='use custom layers implementation (default: False)')
+    parser.add_argument('--scalar', action='store_true', default=False,
+                        help='use custom layers implementation in scalar form (default: False)')
+    parser.add_argument('--single-batch', action='store_true', default=False,
+                        help='train on a single batch to test time for 1 epoch (default: False)')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',

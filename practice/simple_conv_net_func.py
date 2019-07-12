@@ -183,7 +183,7 @@ def relu_scalar(x_in, device='cpu'):
     x_in = x_in.view(-1).to(device)
     x_out = torch.zeros_like(x_in)
     for i in range(x_out.size(0)):
-        x_out[i] = torch.max(x_in[i], torch.zeros(1))
+        x_out[i] = torch.max(x_in[i], torch.zeros(1).to(device))
     return x_out.view(sizes)
 
 def relu_vector(x_in, device='cpu'):
