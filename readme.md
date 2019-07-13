@@ -5,8 +5,8 @@ See `theory.pdf`.
 ## Practical solution
 See `practice`.
 Implementation of layers is in `simple_conv_net_func.py`.
-You can check it by running `python test.py`
-(it calculates MSE for each PyTorch implemented layer output vs. custom layer output)
+You can check it by running `python test_layers.py`
+(it calculates MSE for each PyTorch layer output vs. custom layer output)
 
 ### Results
 After training using PyTorch layers (run `python simple_conv_net_train.py`) I got:
