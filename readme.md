@@ -42,4 +42,4 @@ sys     0m3.810s
 ```
 Here, for both time experiments, a single batch of size 64 is passed.
 
-\* Training time was calculated for the whole training script so the initialization is included. Still, you can easily notice how vector form implementation boosts the process.  
+\*Training time was calculated for the whole training script so the initialization is included. Still, you can easily notice how vector form implementation boosts the process.  
