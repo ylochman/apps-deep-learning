@@ -26,8 +26,8 @@ The training details for both NNs are the same and following:
 * lr 0.01
 * SGD momentum 0.5
 
-### Training time
-1 epoch training time for vector form  (run `time python simple_conv_net_train.py --custom --epochs 1 --single-batch`) is about **3.7 sec**:
+### Training time (of 1 epoch)
+For vector form  (run `time python simple_conv_net_train.py --custom --epochs 1 --single-batch`) it's about **3.7 sec**:
 ```
 real    0m3.083s
 user    0m2.702s
